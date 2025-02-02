@@ -1,0 +1,159 @@
+COMO VINCULAR COM BANCO DE DADOS MYSQL!!!
+
+1. Instalar o Conector JDBC do MySQL
+O Java se comunica com o MySQL usando o JDBC Driver. Você pode baixar o MySQL Connector/J em: 🔗 https://dev.mysql.com/downloads/connector/j/
+
+Após baixar, adicione o arquivo .jar ao classpath do seu projeto.
+
+Se estiver usando Maven, adicione a seguinte dependência ao pom.xml:
+
+<dependency>
+    <groupId>mysql</groupId>
+    <artifactId>mysql-connector-java</artifactId>
+    <version>8.0.33</version>
+</dependency>
+2. Criar o Banco de Dados e a Tabela no MySQL
+Abra o MySQL e execute os comandos SQL abaixo para criar um banco de dados e a tabela de produtos:
+
+CREATE DATABASE estoque;
+USE estoque;
+
+CREATE TABLE produtos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    quantidade INT NOT NULL,
+    preco DOUBLE NOT NULL
+);
+Adicione alguns produtos de exemplo:
+
+INSERT INTO produtos (nome, quantidade, preco) VALUES
+('Placa Mãe', 200, 799.45),
+('Memória RAM', 200, 250.50),
+('Cooler', 200, 79.99);
+3. Criar a Conexão com o Banco de Dados
+Crie uma classe chamada DatabaseConnection para gerenciar a conexão com o MySQL:
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+
+public class DatabaseConnection {
+    private static final String URL = "jdbc:mysql://localhost:3306/estoque";
+    private static final String USER = "root";  // Seu usuário do MySQL
+    private static final String PASSWORD = "senha";  // Sua senha do MySQL
+
+    public static Connection getConnection() throws SQLException {
+        return DriverManager.getConnection(URL, USER, PASSWORD);
+    }
+}
+4. Modificar a Classe ControleEstoque para Usar MySQL
+Agora, altere a classe ControleEstoque para buscar e atualizar os produtos diretamente no banco de dados.
+
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+
+class ControleEstoque {
+    public Produto buscarProduto(String nome) {
+        String sql = "SELECT * FROM produtos WHERE nome = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, nome);
+            ResultSet rs = stmt.executeQuery();
+            
+            if (rs.next()) {
+                return new Produto(rs.getString("nome"), rs.getInt("quantidade"), rs.getDouble("preco"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public void atualizarEstoque(String nome, int quantidade) {
+        String sql = "UPDATE produtos SET quantidade = ? WHERE nome = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, quantidade);
+            stmt.setString(2, nome);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public List<Produto> getProdutos() {
+        List<Produto> produtos = new ArrayList<>();
+        String sql = "SELECT * FROM produtos";
+        try (Connection conn = DatabaseConnection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            
+            while (rs.next()) {
+                produtos.add(new Produto(rs.getString("nome"), rs.getInt("quantidade"), rs.getDouble("preco")));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return produtos;
+    }
+}
+5. Atualizar a Classe Main para Usar MySQL
+Agora, alteramos os botões "Vender Produto" e "Adicionar Estoque" para atualizar o banco de dados:
+
+venderButton.addActionListener(e -> {
+    String nome = nomeField.getText();
+    int quantidade;
+    try {
+        quantidade = Integer.parseInt(quantidadeField.getText());
+    } catch (NumberFormatException ex) {
+        statusLabel.setText("Quantidade inválida");
+        return;
+    }
+    Produto produto = estoque.buscarProduto(nome);
+    if (produto != null) {
+        if (produto.getQuantidade() >= quantidade) {
+            int novoEstoque = produto.getQuantidade() - quantidade;
+            estoque.atualizarEstoque(nome, novoEstoque);
+            statusLabel.setText("Venda realizada com sucesso!");
+        } else {
+            statusLabel.setText("Estoque insuficiente");
+        }
+    } else {
+        statusLabel.setText("Produto não encontrado");
+    }
+});
+
+adicionarButton.addActionListener(e -> {
+    String nome = nomeField.getText();
+    int quantidade;
+    try {
+        quantidade = Integer.parseInt(quantidadeField.getText());
+    } catch (NumberFormatException ex) {
+        statusLabel.setText("Quantidade inválida");
+        return;
+    }
+    Produto produto = estoque.buscarProduto(nome);
+    if (produto != null) {
+        int novoEstoque = produto.getQuantidade() + quantidade;
+        estoque.atualizarEstoque(nome, novoEstoque);
+        statusLabel.setText("Estoque atualizado!");
+    } else {
+        statusLabel.setText("Produto não encontrado");
+    }
+});
+6. Criar Relatório Usando MySQL
+Agora, alteramos o botão de "Gerar Relatório" para que os dados venham direto do banco de dados:
+
+gerarRelatorioButton.addActionListener(e -> {
+    try (FileWriter writer = new FileWriter("relatorio_estoque.txt")) {
+        for (Produto p : estoque.getProdutos()) {
+            writer.write(p.toString() + "\n");
+        }
+        statusLabel.setText("Relatório gerado com sucesso!");
+    } catch (IOException ex) {
+        statusLabel.setText("Erro ao gerar relatório");
+    }
+});
+7. Testar o Sistema
+Agora, execute o código e veja se as operações de venda, adição de estoque e geração de relatório funcionam corretamente com o banco de dados MySQL.
