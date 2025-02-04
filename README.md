@@ -10,6 +10,7 @@ Um sistema de controle de estoque desenvolvido em Java para a loja de informáti
 - Visualização do Estoque: Exibe a lista de mercadorias em estoque. 
 - Busca de mercadorias.
 - Gera relatórios de estoque.
+- Integrado com Branco de dados (MYSQL)
 
 ## Tecnologias
 
@@ -18,7 +19,8 @@ Um sistema de controle de estoque desenvolvido em Java para a loja de informáti
 
 ## Próximos Passos
 
-- Integrar com banco de dados.
+- Criar parte visual e interativa do sistema.
+- Vincular ao sistema de venda do site.
 
 ## Contribuição
 
